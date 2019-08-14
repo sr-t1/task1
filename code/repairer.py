@@ -1,4 +1,8 @@
-from my_face_detect import my_face_detect
+import my_face_detect
+import my_face_repair
+import cv2
+import numpy as np
+
 class Repair:
     def __init__(self):
         pass
@@ -15,8 +19,11 @@ class Repair:
         img_repaired = self.repair_background(img)
 
         face_img_repaireds = []
+        idex = 0
         for face_img in face_imgs:
+            idex+=1
             face_img_repaired = self.repair_face(face_img)
+            cv2.imwrite('%s.png'%idex, face_img_repaired)
             face_img_repaireds.append(face_img_repaired)
 
         img_repaired_final = self.fuse(img_repaired, face_img_repaireds, face_bboxs * 4)
@@ -31,7 +38,7 @@ class Repair:
             face_imgs: a list that includes the face images (maybe greater than 2)
             face_bbox: a list that includes the the positions of all face images (eg. [ [x1, y1, h1, w1], [x2, y2, h2, w2] ])
         '''
-        return my_face_detect(img)
+        return my_face_detect.my_face_detect(img)
 
     def repair_face(self, face_img):
         '''
@@ -39,7 +46,7 @@ class Repair:
         :param face_img: an image only include face
         :return: a repaired face image
         '''
-        pass
+        return my_face_repair.repair_face(face_img)
 
     def repair_background(self, img):
         '''
@@ -57,3 +64,11 @@ class Repair:
         :return: a final repaired image
         '''
         pass
+
+def main():
+    img = cv2.imread("testset/01.png")
+    r = Repair()
+    r.repair(img)
+
+if __name__ == '__main__':
+    main()
