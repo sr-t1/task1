@@ -26,7 +26,7 @@ class Repair:
             cv2.imwrite('%s.png'%idex, face_img_repaired)
             face_img_repaireds.append(face_img_repaired)
 
-        img_repaired_final = self.fuse(img_repaired, face_img_repaireds, face_bboxs * 4)
+        img_repaired_final = self.fuse(img_repaired, face_img_repaireds, face_bboxs)
 
         return img_repaired_final
 
@@ -54,7 +54,9 @@ class Repair:
         :param img: the whole low-resolution image
         :return: a repaired whole image
         '''
-        pass
+        height, width = img.shape[:2]
+        size = (int(width * 4), int(height * 4))
+        return cv2.resize(img, size, interpolation=cv2.INTER_NEAREST)
 
     def fuse(self, img, face_imgs, face_bboxs):
         '''
@@ -63,12 +65,16 @@ class Repair:
         :param face_img: a list that includes all repaired face images
         :return: a final repaired image
         '''
-        pass
+        idex = 0
+        for face_img in face_imgs:
+            img[4*face_bboxs[idex][1]:4*(face_bboxs[idex][1]+face_bboxs[idex][2]), 4*face_bboxs[idex][0]:4*(face_bboxs[idex][0]+face_bboxs[idex][3])] = face_img
+            idex+=1
+        return img
 
 def main():
-    img = cv2.imread("testset/01.png")
+    img = cv2.imread("testset/02.png")
     r = Repair()
-    r.repair(img)
+    cv2.imwrite('final.png', r.repair(img))
 
 if __name__ == '__main__':
     main()
