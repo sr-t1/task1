@@ -1,7 +1,8 @@
 # task1
 sr an img by processing human and background respectively   
 # instruction
-1.Put your ESRGAN model in code/face_repair/ and rename it to model.pth   
+1.Put the fine-tune model or any ESRGAN model in code/face_repair/ and rename it to model.pth   
+Fine-tune model download:https://pan.baidu.com/s/1Sl2TvM2dyEp9HPcImHnrjQ   
 2.Move the testset inside code/   
 3.Run repairer.py,   
 You can change this code to test different functions or pictures:   
