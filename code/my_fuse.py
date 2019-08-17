@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-def fuse(self, img, face_imgs, face_bboxs):
+def my_fuse(img, face_imgs, face_bboxs):
     '''
     Fuse the repaired face image into the whole image
     :param img: the repaired whole image
