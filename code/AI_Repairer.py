@@ -97,8 +97,7 @@ class Ui_MainWindow(QtWidgets.QWidget):
     def repair(self):
         if self.image is not None:
             self.image_repair = self.repairer.repair(self.image)
-            # self.image_repair = cv2.imread('./testset/00.png')
-            # self.image_show_repair = cv2.resize(self.image_repair, (1280, 720), cv2.INTER_CUBIC)
+            self.image_show_repair = self.image_repair
             self.show_image(self.image_show_repair)
 
     def image_switch(self):
