@@ -10,4 +10,4 @@ def main():
     r = Repair()   
     cv2.imwrite('final.png', r.repair(img))   
 4.The face result picture will be saved in code/ named as 1.png,2.png,3.png by the order of faces detected   
-The full result will be saved as code/final.png, with a nearest upsampled background   
+The full result will be saved as code/final.png   
