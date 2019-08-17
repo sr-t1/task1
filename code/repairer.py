@@ -53,11 +53,13 @@ class Repair:
         Repair the whole low-resolution image
         :param img: the whole low-resolution image
         :return: a repaired whole image
-        '''
+        
         height, width = img.shape[:2]
         size = (int(width * 4), int(height * 4))
         return cv2.resize(img, size, interpolation=cv2.INTER_NEAREST)
-
+        '''
+        return my_repair_background.my_repair_background(img)
+    
     def fuse(self, img, face_imgs, face_bboxs):
         '''
         Fuse the repaired face image into the whole image
