@@ -2,7 +2,7 @@ import my_face_detect
 import my_face_repair
 import cv2
 import numpy as np
-
+import my_fuse
 class Repair:
     def __init__(self):
         pass
@@ -65,11 +65,14 @@ class Repair:
         :param face_img: a list that includes all repaired face images
         :return: a final repaired image
         '''
+        #he
+        '''
         idex = 0
         for face_img in face_imgs:
             img[4*face_bboxs[idex][1]:4*(face_bboxs[idex][1]+face_bboxs[idex][2]), 4*face_bboxs[idex][0]:4*(face_bboxs[idex][0]+face_bboxs[idex][3])] = face_img
             idex+=1
-        return img
+        '''
+        return my_fuse.my_fuse(img, face_imgs, face_bboxs)
 
 def main():
     img = cv2.imread("testset/02.png")
