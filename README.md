@@ -13,6 +13,7 @@ def main():
     img = cv2.imread('testset/%s.jpg' % pic)   
     r = Repair()   
     cv2.imwrite('results/final_%s.png' % pic, r.repair(img))   
+   
 The face result picture will be saved in code/ named as 1.png,2.png,3.png by the order of faces detected   
 The full result will be saved as code/final_(pic).png   
    
