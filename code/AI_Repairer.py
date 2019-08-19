@@ -47,12 +47,12 @@ class Ui_MainWindow(QtWidgets.QWidget):
         self.move(250, 100)
 
         # show
-        self.label_show_image = QtWidgets.QLabel()
+        #self.label_show_image = QtWidgets.QLabel()
         self.label_move = QtWidgets.QLabel()
         self.label_move.setFixedSize(100, 100)
 
-        self.label_show_image.setFixedSize(1280, 720)
-        self.label_show_image.setAutoFillBackground(False)
+        #self.label_show_image.setFixedSize(1280, 720)
+        #self.label_show_image.setAutoFillBackground(False)
 
         self.__layout_fun_button.addWidget(self.button_open_file)
         self.__layout_fun_button.addWidget(self.button_repair)
@@ -62,7 +62,23 @@ class Ui_MainWindow(QtWidgets.QWidget):
         self.__layout_fun_button.addWidget(self.label_move)
 
         self.__layout_main.addLayout(self.__layout_fun_button)
-        self.__layout_main.addWidget(self.label_show_image)
+        #self.__layout_main.addWidget(self.label_show_image)
+
+        # 创建带滚动条的label显示图片
+        self.topFiller = QWidget()
+        self.topFiller.setMinimumSize(1280, 720)  #设置滚动界面的尺寸
+        self.label_show_image = QLabel(self.topFiller)
+        self.scroll = QScrollArea()
+        self.scroll.setWidget(self.topFiller)
+        self.scroll.setFixedSize(1280, 720)
+        self.hSb = self.scroll.verticalScrollBar()
+        vbox1 = QVBoxLayout()
+        vbox1.addWidget(self.label_show_image)
+        self.topFiller.setLayout(vbox1)
+        vbox2 = QVBoxLayout()
+        vbox2.addWidget(self.topFiller)
+        self.scroll.setLayout(vbox2)
+        self.__layout_main.addWidget(self.scroll)
 
         self.setLayout(self.__layout_main)
         self.label_move.raise_()
@@ -75,15 +91,26 @@ class Ui_MainWindow(QtWidgets.QWidget):
         self.button_save.clicked.connect(self.save)
         self.button_close.clicked.connect(self.close)
 
+    def wheelEvent(self, event):
+        angle = event.angleDelta()
+        y = angle.y()
+        self.hSb.setValue(self.hSb.value() - y)
+
     def open_file(self):
         file = QFileDialog.getOpenFileName(self, '选择图像', filter='*.png;*.jpg')
         if not file[0] == '':
             print(file[0])
             self.image = cv2.imread(file[0])
-            self.image_show = cv2.resize(self.image, (1280, 720), interpolation=cv2.INTER_NEAREST)
+            self.image_show = self.image
+            height, width = self.image.shape[:2]
+            self.image_show = cv2.resize(self.image, (width * 4, height * 4), interpolation=cv2.INTER_NEAREST)
+            #self.image_show = cv2.resize(self.image, (1280, 720), interpolation=cv2.INTER_NEAREST)
             self.show_image(self.image_show)
 
     def show_image(self, show):
+        # 设置滚动界面的尺寸
+        height, width = show.shape[:2]
+        self.topFiller.setMinimumSize(width, height)
         show = cv2.cvtColor(show, cv2.COLOR_BGR2RGB)
         show_image = QtGui.QImage(show.data, show.shape[1], show.shape[0], QtGui.QImage.Format_RGB888)
         self.label_show_image.setPixmap(QtGui.QPixmap.fromImage(show_image))
@@ -98,6 +125,7 @@ class Ui_MainWindow(QtWidgets.QWidget):
         if self.image is not None:
             self.image_repair = self.repairer.repair(self.image)
             self.image_show_repair = self.image_repair
+            #self.image_show_repair = cv2.resize(self.image_repair, (1280, 720), interpolation=cv2.INTER_NEAREST)
             self.show_image(self.image_show_repair)
 
     def image_switch(self):
