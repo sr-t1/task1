@@ -170,7 +170,7 @@ class Repair:
 
 def main():
     pic = '00'
-    img = cv2.imread('testset/%s.jpg' % pic)
+    img = cv2.imread('testset/%s.png' % pic)
     r = Repair()
     cv2.imwrite('results/final_%s.png' % pic, r.repair(img))
 
