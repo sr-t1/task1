@@ -2,9 +2,9 @@
 sr an img by processing human and background respectively   
 # instruction
 1.Put the fine-tune face_sr model or any ESRGAN model in code/face_repair/ and rename it to model.pth   
-face_sr model download:https://pan.baidu.com/s/1Sl2TvM2dyEp9HPcImHnrjQ   
+face_sr model download:https://pan.baidu.com/s/1wSFSs_kDlaosqM5n5VVHhQ#list/path=%2F
 Put the fine-tune background_sr model or any ESRGAN model in code/face_repair/ and rename it to model_bg.pth   
-background_sr model download:https://pan.baidu.com/s/1Sl2TvM2dyEp9HPcImHnrjQ   
+background_sr model download:https://pan.baidu.com/s/1wSFSs_kDlaosqM5n5VVHhQ#list/path=%2F 
    
 2.Move the testset inside code/   
    
