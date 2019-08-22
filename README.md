@@ -16,7 +16,7 @@ def main():
     r = Repair()   
     r.repair(img)   
    
-The face result picture will be saved in code/results named as face_1.png,face_2.png,face_3.png by the order of faces detected   
+The face result picture will be saved in code/results named as face_1.png,face_2.png,face_3.png.etc   
 The background result will be saved as code/results/bg.png   
 The full result will be saved as code/results/final.png   
    
