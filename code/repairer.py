@@ -3,25 +3,6 @@ import numpy as np
 import torch
 import face_repair.architecture as arch
 
-def bb_overlab(x1, y1, h1, w1, x2, y2, h2, w2):
-    '''
-    :return: 两个矩形框如果有交集则返回重合比例, 如果没有交集则返回 0
-    '''
-    if x1>x2+w2:
-        return 0
-    if y1>y2+h2:
-        return 0
-    if x1+w1<x2:
-        return 0
-    if y1+h1<y2:
-        return 0
-    colInt = abs(min(x1 +w1 ,x2+w2) - max(x1, x2))
-    rowInt = abs(min(y1 + h1, y2 +h2) - max(y1, y2))
-    overlap_area = colInt * rowInt
-    area1 = w1 * h1
-    area2 = w2 * h2
-    return overlap_area / (area1 + area2 - overlap_area)
-
 class Repair:
     def __init__(self):
         pass
@@ -42,7 +23,7 @@ class Repair:
         for face_img in face_imgs:
             idex+=1
             face_img_repaired = self.repair_face(face_img)
-            cv2.imwrite('results/%s.png'%idex, face_img_repaired)
+            cv2.imwrite('results/face_%s.png'%idex, face_img_repaired)
             face_img_repaireds.append(face_img_repaired)
 
         img_repaired_final = self.fuse(img_repaired, face_img_repaireds, face_bboxs)
@@ -50,6 +31,25 @@ class Repair:
         cv2.imwrite('results/final.png', img_repaired_final)
 
         return img_repaired_final
+
+    def bb_overlab(self, x1, y1, h1, w1, x2, y2, h2, w2):
+        '''
+        :return: 两个矩形框如果有交集则返回重合比例, 如果没有交集则返回 0
+        '''
+        if x1 > x2 + w2:
+            return 0
+        if y1 > y2 + h2:
+            return 0
+        if x1 + w1 < x2:
+            return 0
+        if y1 + h1 < y2:
+            return 0
+        colInt = abs(min(x1 + w1, x2 + w2) - max(x1, x2))
+        rowInt = abs(min(y1 + h1, y2 + h2) - max(y1, y2))
+        overlap_area = colInt * rowInt
+        area1 = w1 * h1
+        area2 = w2 * h2
+        return overlap_area / (area1 + area2 - overlap_area)
 
     def face_detect(self, img):
         '''
@@ -90,7 +90,7 @@ class Repair:
             d = 1
             if face_imgs:
                 for face in face_bbox:
-                    if bb_overlab(x, y, h, w, face[0], face[1], face[2], face[3])>0.4:
+                    if self.bb_overlab(x, y, h, w, face[0], face[1], face[2], face[3])>0.4:
                         d = 0
                         break
             #有重合度大于50%的则不保存此人脸
@@ -106,10 +106,9 @@ class Repair:
         :param face_img: an image only include face
         :return: a repaired face image
         '''
-        #去噪
-        #output = cv2.fastNlMeansDenoisingColored(output, None, 2, 2, 7, 21)
-
-        #读取模型
+        # 去噪
+        # img = cv2.fastNlMeansDenoisingColored(img, None, 2, 2, 7, 21)
+        #读取模型mixed_43600
         model_path = 'face_repair/model.pth'
         device = torch.device('cuda')  # if you want to run on CPU, change 'cuda' -> 'cpu'
         model = arch.RRDB_Net(3, 3, 64, 23, gc=32, upscale=4, norm_type=None, act_type='leakyrelu', \
@@ -119,13 +118,11 @@ class Repair:
         for k, v in model.named_parameters():
             v.requires_grad = False
         model = model.to(device)
-
         #生成LR
         face_img = face_img * 1.0 / 255
         face_img = torch.from_numpy(np.transpose(face_img[:, :, [2, 1, 0]], (2, 0, 1))).float()
         img_LR = face_img.unsqueeze(0)
         img_LR = img_LR.to(device)
-
         #生成SR
         output = model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
         output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))
@@ -138,8 +135,30 @@ class Repair:
         :param img: the whole low-resolution image
         :return: a repaired whole image
         '''
-        height, width = img.shape[:2]
-        return cv2.resize(img, (width * 4, height * 4), interpolation=cv2.INTER_CUBIC)
+        #bicubic上采样
+        #height, width = img.shape[:2]
+        #return cv2.resize(img, (width * 4, height * 4), interpolation=cv2.INTER_CUBIC)
+
+        # 读取模型nearest_wiki_19250
+        model_path = 'face_repair/model_bg.pth'
+        device = torch.device('cuda')  # if you want to run on CPU, change 'cuda' -> 'cpu'
+        model = arch.RRDB_Net(3, 3, 64, 23, gc=32, upscale=4, norm_type=None, act_type='leakyrelu', \
+                              mode='CNA', res_scale=1, upsample_mode='upconv')
+        model.load_state_dict(torch.load(model_path), strict=True)
+        model.eval()
+        for k, v in model.named_parameters():
+            v.requires_grad = False
+        model = model.to(device)
+        # 生成LR
+        img = img * 1.0 / 255
+        img = torch.from_numpy(np.transpose(img[:, :, [2, 1, 0]], (2, 0, 1))).float()
+        img_LR = img.unsqueeze(0)
+        img_LR = img_LR.to(device)
+        # 生成SR
+        output = model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
+        output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))
+        output = (output * 255.0).round()
+        return output
 
     def fuse(self, img, face_imgs, face_bboxs):
         '''
@@ -148,17 +167,12 @@ class Repair:
         :param face_img: a list that includes all repaired face images
         :return: a final repaired image
         '''
-        '''
-        idex = 0
-        for face_img,face_bbox in zip(face_imgs,face_bboxs):
-            img[4*face_bbox[1]:4*(face_bbox[1]+face_bbox[2]), 4*face_bbox[0]:4*(face_bbox[0]+face_bbox[3])] = face_img
-            idex+=1
-        return img
-        '''
+        cv2.imwrite('results/bg.png', img)
+        img = cv2.imread('results/bg.png')
         idx = 0
         for face_img,face_bbox in zip(face_imgs, face_bboxs):
             idx+=1
-            face_img = cv2.imread('results/%s.png'%idx)
+            face_img = cv2.imread('results/face_%s.png'%idx)
             mask = 255 * np.ones(face_img.shape, face_img.dtype)
             center =  (4*face_bbox[0] + 2*face_bbox[3], 4*face_bbox[1] + 2*face_bbox[2])
             #人脸缩小一个像素边缘后直接替换原图
@@ -172,7 +186,7 @@ def main():
     pic = '00'
     img = cv2.imread('testset/%s.png' % pic)
     r = Repair()
-    cv2.imwrite('results/final_%s.png' % pic, r.repair(img))
+    r.repair(img)
 
 if __name__ == '__main__':
     main()
