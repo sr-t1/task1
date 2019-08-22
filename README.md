@@ -1,5 +1,5 @@
 # task1
-sr an img by processing human and background respectively   
+sr an img by processing faces and background respectively   
 # instruction
 1.Put the fine-tune face_sr model or any ESRGAN model in code/face_repair/ and rename it to model.pth   
 face_sr model download:https://pan.baidu.com/s/1wSFSs_kDlaosqM5n5VVHhQ#list/path=%2F   
