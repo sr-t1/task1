@@ -139,7 +139,7 @@ class Repair:
         #height, width = img.shape[:2]
         #return cv2.resize(img, (width * 4, height * 4), interpolation=cv2.INTER_CUBIC)
 
-        # 读取模型nearest_wiki_19250
+        # 读取模型nearest_lfw_24000
         model_path = 'face_repair/model_bg.pth'
         device = torch.device('cuda')  # if you want to run on CPU, change 'cuda' -> 'cpu'
         model = arch.RRDB_Net(3, 3, 64, 23, gc=32, upscale=4, norm_type=None, act_type='leakyrelu', \
@@ -175,9 +175,10 @@ class Repair:
             face_img = cv2.imread('results/face_%s.png'%idx)
             mask = 255 * np.ones(face_img.shape, face_img.dtype)
             center =  (4*face_bbox[0] + 2*face_bbox[3], 4*face_bbox[1] + 2*face_bbox[2])
-            #人脸缩小一个像素边缘后直接替换原图
-            img[4 * face_bbox[1] + 1:4 * (face_bbox[1] + face_bbox[2]) - 1, 4 * face_bbox[0] + 1:4 * (face_bbox[0] + face_bbox[3]) - 1] = \
-                face_img[1:face_img.shape[0] - 1, 1:face_img.shape[1] - 1]
+            #人脸缩小2个像素边缘后直接替换原图
+            edge = 2
+            img[4 * face_bbox[1] + edge:4 * (face_bbox[1] + face_bbox[2]) - edge, 4 * face_bbox[0] + edge:4 * (face_bbox[0] + face_bbox[3]) - edge] = \
+                face_img[edge:face_img.shape[0] - edge, edge:face_img.shape[1] - edge]
             # 人脸边缘的一个像素和原图融合
             img = cv2.seamlessClone(face_img, img, mask, center, cv2.NORMAL_CLONE)
         return img
