@@ -193,12 +193,10 @@ def main():
     test_img_folder = 'testset/*'
     for path in glob.glob(test_img_folder):
         base = os.path.splitext(os.path.basename(path))[0]
-        print(base)
         img = cv2.imread(path, cv2.IMREAD_COLOR)
         time_start = time.clock()
-        #r.repair(img)
-        r.repair_face(img)
-        print('Generating SR time:%ss' % (time.clock() - time_start))
+        cv2.imwrite('results/%s_rlt.png' % base, r.repair(img))
+        print('Generating %s SR time:%ss' % (base,(time.clock() - time_start)))
 
 if __name__ == '__main__':
     main()
