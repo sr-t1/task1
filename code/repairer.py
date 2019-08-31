@@ -2,10 +2,34 @@ import cv2
 import numpy as np
 import torch
 import face_repair.architecture as arch
+import time
+import glob
+import os.path
 
 class Repair:
     def __init__(self):
-        pass
+
+        self.device = torch.device('cuda')  # if you want to run on CPU, change 'cuda' -> 'cpu'
+        # 读取模型mixed_43600
+        face_model_path = 'face_repair/model.pth'
+        self.face_model = arch.RRDB_Net(3, 3, 64, 23, gc=32, upscale=4, norm_type=None, act_type='leakyrelu', \
+                              mode='CNA', res_scale=1, upsample_mode='upconv')
+        self.face_model.load_state_dict(torch.load(face_model_path), strict=True)
+        self.face_model.eval()
+        for k, v in self.face_model.named_parameters():
+            v.requires_grad = False
+        self.face_model = self.face_model.to(self.device)
+        '''
+        # 读取模型nearest_lfw_24000
+        background_model_path = 'face_repair/model_bg.pth'
+        self.background_model = arch.RRDB_Net(3, 3, 64, 23, gc=32, upscale=4, norm_type=None, act_type='leakyrelu', \
+                              mode='CNA', res_scale=1, upsample_mode='upconv')
+        self.background_model.load_state_dict(torch.load(background_model_path), strict=True)
+        self.background_model.eval()
+        for k, v in self.background_model.named_parameters():
+            v.requires_grad = False
+        self.background_model = self.background_model.to(self.device)
+        '''
 
     def repair(self, img):
         '''
@@ -108,23 +132,13 @@ class Repair:
         '''
         # 去噪
         # img = cv2.fastNlMeansDenoisingColored(img, None, 2, 2, 7, 21)
-        #读取模型mixed_43600
-        model_path = 'face_repair/model.pth'
-        device = torch.device('cuda')  # if you want to run on CPU, change 'cuda' -> 'cpu'
-        model = arch.RRDB_Net(3, 3, 64, 23, gc=32, upscale=4, norm_type=None, act_type='leakyrelu', \
-                              mode='CNA', res_scale=1, upsample_mode='upconv')
-        model.load_state_dict(torch.load(model_path), strict=True)
-        model.eval()
-        for k, v in model.named_parameters():
-            v.requires_grad = False
-        model = model.to(device)
         #生成LR
         face_img = face_img * 1.0 / 255
         face_img = torch.from_numpy(np.transpose(face_img[:, :, [2, 1, 0]], (2, 0, 1))).float()
         img_LR = face_img.unsqueeze(0)
-        img_LR = img_LR.to(device)
+        img_LR = img_LR.to(self.device)
         #生成SR
-        output = model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
+        output = self.face_model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
         output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))
         output = (output * 255.0).round()
         return output
@@ -136,29 +150,20 @@ class Repair:
         :return: a repaired whole image
         '''
         #bicubic上采样
-        #height, width = img.shape[:2]
-        #return cv2.resize(img, (width * 4, height * 4), interpolation=cv2.INTER_CUBIC)
-
-        # 读取模型nearest_lfw_24000
-        model_path = 'face_repair/model_bg.pth'
-        device = torch.device('cuda')  # if you want to run on CPU, change 'cuda' -> 'cpu'
-        model = arch.RRDB_Net(3, 3, 64, 23, gc=32, upscale=4, norm_type=None, act_type='leakyrelu', \
-                              mode='CNA', res_scale=1, upsample_mode='upconv')
-        model.load_state_dict(torch.load(model_path), strict=True)
-        model.eval()
-        for k, v in model.named_parameters():
-            v.requires_grad = False
-        model = model.to(device)
+        height, width = img.shape[:2]
+        return cv2.resize(img, (width * 4, height * 4), interpolation=cv2.INTER_CUBIC)
+        '''
         # 生成LR
         img = img * 1.0 / 255
         img = torch.from_numpy(np.transpose(img[:, :, [2, 1, 0]], (2, 0, 1))).float()
         img_LR = img.unsqueeze(0)
-        img_LR = img_LR.to(device)
+        img_LR = img_LR.to(self.device)
         # 生成SR
-        output = model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
+        output = self.background_model(img_LR).data.squeeze().float().cpu().clamp_(0, 1).numpy()
         output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))
         output = (output * 255.0).round()
         return output
+        '''
 
     def fuse(self, img, face_imgs, face_bboxs):
         '''
@@ -179,15 +184,21 @@ class Repair:
             edge = 2
             img[4 * face_bbox[1] + edge:4 * (face_bbox[1] + face_bbox[2]) - edge, 4 * face_bbox[0] + edge:4 * (face_bbox[0] + face_bbox[3]) - edge] = \
                 face_img[edge:face_img.shape[0] - edge, edge:face_img.shape[1] - edge]
-            # 人脸边缘的一个像素和原图融合
+            # 人脸边缘的2个像素和原图融合
             img = cv2.seamlessClone(face_img, img, mask, center, cv2.NORMAL_CLONE)
         return img
 
 def main():
-    pic = '00'
-    img = cv2.imread('testset/%s.png' % pic)
     r = Repair()
-    r.repair(img)
+    test_img_folder = 'testset/*'
+    for path in glob.glob(test_img_folder):
+        base = os.path.splitext(os.path.basename(path))[0]
+        print(base)
+        img = cv2.imread(path, cv2.IMREAD_COLOR)
+        time_start = time.clock()
+        #r.repair(img)
+        r.repair_face(img)
+        print('Generating SR time:%ss' % (time.clock() - time_start))
 
 if __name__ == '__main__':
     main()
